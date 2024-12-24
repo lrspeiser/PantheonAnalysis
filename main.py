@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Original functions remain unchanged
 def load_and_clean_data(filepath='all_redshifts_PVs.csv'):
     """Load and perform initial data cleaning."""
     print("Loading data from CSV...")
@@ -14,6 +13,28 @@ def load_and_clean_data(filepath='all_redshifts_PVs.csv'):
     # Calculate derived quantities
     data['redshift_diff'] = data['zcmb'] - data['zhel']
     data['abs_PV'] = np.abs(data['PV'])
+
+    # Verify columns
+    expected_columns = {
+        'SNID': 'SNID',
+        'zhel': 'zhel',
+        'zcmb': 'zcmb',
+        'zHD': 'zHD',
+        'PV': 'PV',
+        'zhelerr': 'zhelerr',
+        'zHDerr': 'zHDerr',
+        'has_host': 'has_host',
+        'in_group': 'in_group'
+    }
+
+    print("Verifying columns in dataset...")
+    for col in expected_columns.values():
+        if col not in data.columns:
+            print(f"Missing column: {col}")
+            raise ValueError(f"Column {col} is missing from the dataset")
+        print(f"Verified column: {col}")
+
+    print("Adding derived columns...")
 
     return data
 
@@ -71,7 +92,6 @@ def save_results(processed_data, stats_df):
     stats_df.to_csv('pantheon_plus_statistics.csv', index=False)
     print("Saved statistics to pantheon_plus_statistics.csv")
 
-# New analysis functions
 def analyze_redshift_frames(data):
     """Analyze differences between redshift frames."""
     print("\nAnalyzing redshift frames...")
@@ -126,6 +146,68 @@ def create_analysis_plots(data):
 
     return fig
 
+def analyze_distance_discrepancy(data):
+    """Analyze the difference between expected and measured distances."""
+    print("\nAnalyzing distance discrepancies...")
+
+    # Constants
+    H0 = 70  # Hubble constant in km/s/Mpc
+    c = 299792.458  # Speed of light in km/s
+
+    # Calculate distances in Mpc
+    # Expected distance from Hubble flow
+    data['expected_distance'] = data['zhel'] * (c/H0)  # Simple Hubble law
+
+    # Measured distance including peculiar velocity corrections
+    data['measured_distance'] = (data['zHD'] * c/H0)
+
+    # Calculate discrepancy
+    data['distance_discrepancy'] = data['measured_distance'] - data['expected_distance']
+
+    # Save distance analysis
+    distance_df = pd.DataFrame({
+        'SNID': data['SNID'],
+        'redshift_hel': data['zhel'],
+        'redshift_HD': data['zHD'],
+        'expected_distance': data['expected_distance'],
+        'measured_distance': data['measured_distance'],
+        'discrepancy': data['distance_discrepancy'],
+        'PV': data['PV']
+    })
+
+    distance_df.to_csv('distance_analysis.csv', index=False)
+    print("Saved distance analysis to distance_analysis.csv")
+
+    # Create distance comparison plot
+    plt.figure(figsize=(12, 8))
+    plt.scatter(data['expected_distance'], data['measured_distance'], 
+                alpha=0.5, s=5, c=data['PV'], cmap='coolwarm')
+    plt.colorbar(label='Peculiar Velocity (km/s)')
+
+    # Add diagonal line for reference
+    max_dist = max(data['expected_distance'].max(), data['measured_distance'].max())
+    min_dist = min(data['expected_distance'].min(), data['measured_distance'].min())
+    plt.plot([min_dist, max_dist], [min_dist, max_dist], 'r--', alpha=0.5, 
+             label='Expected=Measured')
+
+    plt.xlabel('Expected Distance (Mpc)')
+    plt.ylabel('Measured Distance (Mpc)')
+    plt.title('Expected vs Measured Distances for Type Ia Supernovae')
+
+    # Add text box with statistics
+    stats_text = f"Mean discrepancy: {data['distance_discrepancy'].mean():.1f} Mpc\n"
+    stats_text += f"Median discrepancy: {data['distance_discrepancy'].median():.1f} Mpc\n"
+    stats_text += f"Std discrepancy: {data['distance_discrepancy'].std():.1f} Mpc"
+    plt.text(0.05, 0.95, stats_text, transform=plt.gca().transAxes, 
+             bbox=dict(facecolor='white', alpha=0.8), verticalalignment='top')
+
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('distance_comparison.png')
+    print("Saved distance comparison plot to distance_comparison.png")
+
+    return distance_df
+
 def main():
     print("Starting Pantheon+ analysis...")
 
@@ -138,6 +220,9 @@ def main():
     # New additional analysis
     redshift_differences = analyze_redshift_frames(processed_data)
     fig = create_analysis_plots(processed_data)
+
+    # Distance analysis that compares supernova vs. redshift
+    distance_df = analyze_distance_discrepancy(processed_data)
 
     # Print summary statistics
     print("\nSummary Statistics:")
