@@ -208,30 +208,110 @@ def analyze_distance_discrepancy(data):
 
     return distance_df
 
+def analyze_cosmic_variance(data):
+    """Analyze cosmic variance in supernova distances."""
+    print("\nAnalyzing cosmic variance...")
+
+    # Group data by redshift bins
+    bin_size = 0.01  # Redshift bin size
+    data['z_bin'] = (data['zcmb'] // bin_size) * bin_size
+
+    # Calculate mean and std deviation of distance discrepancies in each bin
+    cosmic_variance = data.groupby('z_bin')['distance_discrepancy'].agg(['mean', 'std']).reset_index()
+    cosmic_variance.rename(columns={'mean': 'discrepancy_mean', 'std': 'discrepancy_std'}, inplace=True)
+
+    # Save results for inspection
+    cosmic_variance.to_csv('cosmic_variance_analysis.csv', index=False)
+    print("Saved cosmic variance analysis to cosmic_variance_analysis.csv")
+
+    # Create a plot to visualize cosmic variance
+    plt.figure(figsize=(12, 8))
+    plt.errorbar(
+        cosmic_variance['z_bin'], cosmic_variance['discrepancy_mean'],
+        yerr=cosmic_variance['discrepancy_std'], fmt='o', alpha=0.7
+    )
+    plt.axhline(0, color='red', linestyle='--', alpha=0.5, label='No discrepancy')
+    plt.xlabel('Redshift Bin (CMB frame)')
+    plt.ylabel('Mean Distance Discrepancy (Mpc)')
+    plt.title('Cosmic Variance in Distance Discrepancies')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('cosmic_variance_plot.png')
+    print("Saved cosmic variance plot to cosmic_variance_plot.png")
+
+    return cosmic_variance
+
+def analyze_peculiar_velocity_correlation(data):
+    """Analyze correlation between peculiar velocity and group membership."""
+    print("\nAnalyzing peculiar velocity correlation with group membership...")
+
+    # Group data by group membership
+    pv_by_group = data.groupby('in_group')['PV'].agg(['mean', 'std', 'count']).reset_index()
+    pv_by_group.rename(columns={'mean': 'PV_mean', 'std': 'PV_std', 'count': 'PV_count'}, inplace=True)
+
+    print("Peculiar Velocity by Group Membership:")
+    print(pv_by_group)
+
+    # Save results for inspection
+    pv_by_group.to_csv('peculiar_velocity_correlation.csv', index=False)
+    print("Saved peculiar velocity correlation analysis to peculiar_velocity_correlation.csv")
+
+    # Visualization of peculiar velocities by group membership
+    sns.boxplot(data=data, x='in_group', y='PV')
+    plt.xlabel('Group Membership (1=In Group, 0=Not in Group)')
+    plt.ylabel('Peculiar Velocity (km/s)')
+    plt.title('Peculiar Velocities by Group Membership')
+    plt.savefig('peculiar_velocity_by_group.png')
+    print("Saved peculiar velocity by group plot to peculiar_velocity_by_group.png")
+
+    return pv_by_group
+
+def analyze_redshift_offsets(data):
+    """Analyze systematic offsets between heliocentric and CMB redshifts."""
+    print("\nAnalyzing redshift offsets...")
+
+    # Calculate offset
+    data['redshift_offset'] = data['zcmb'] - data['zhel']
+
+    # Compute statistics for offsets
+    offset_mean = data['redshift_offset'].mean()
+    offset_std = data['redshift_offset'].std()
+
+    print(f"Mean redshift offset: {offset_mean:.6f}")
+    print(f"Standard deviation of redshift offsets: {offset_std:.6f}")
+
+    # Identify significant outliers
+    threshold = 3 * offset_std
+    data['offset_outlier'] = np.abs(data['redshift_offset'] - offset_mean) > threshold
+    print(f"Number of significant redshift outliers: {data['offset_outlier'].sum()}")
+
+    # Save analysis
+    data[['SNID', 'redshift_offset', 'offset_outlier']].to_csv('redshift_offset_analysis.csv', index=False)
+    print("Saved redshift offset analysis to redshift_offset_analysis.csv")
+
+    return data
+
 def main():
     print("Starting Pantheon+ analysis...")
 
-    # Original analysis
+    # Load and clean data
     data = load_and_clean_data()
     processed_data = process_data(data)
+
+    # Core analysis
     stats_df = compute_statistics(data)
     save_results(processed_data, stats_df)
+    analyze_redshift_frames(processed_data)
+    create_analysis_plots(processed_data)
+    analyze_distance_discrepancy(processed_data)
 
-    # New additional analysis
-    redshift_differences = analyze_redshift_frames(processed_data)
-    fig = create_analysis_plots(processed_data)
-
-    # Distance analysis that compares supernova vs. redshift
-    distance_df = analyze_distance_discrepancy(processed_data)
-
-    # Print summary statistics
-    print("\nSummary Statistics:")
-    print(f"Total SNe: {len(data)}")
-    print(f"Redshift Range: {data['zcmb'].min():.3f} to {data['zcmb'].max():.3f}")
-    print(f"SNe with Hosts: {(data['has_host'].mean() * 100):.1f}%")
-    print(f"SNe in Groups: {(data['in_group'].mean() * 100):.1f}%")
+    # New analyses
+    analyze_cosmic_variance(processed_data)
+    analyze_peculiar_velocity_correlation(processed_data)
+    analyze_redshift_offsets(processed_data)
 
     print("\nAnalysis complete!")
 
 if __name__ == "__main__":
     main()
+

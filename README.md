@@ -9,12 +9,7 @@ This analysis is based on the Pantheon+ dataset of Type Ia supernovae, primarily
    - Authors: Scolnic, D., Brout, D., et al. (2022)
    - Contains 1701 light curves of 1550 unique, spectroscopically confirmed Type Ia supernovae
 
-2. **Draft version February 9, 2022**
-
-   - Contains detailed analysis methodology and improvements over the previous Pantheon dataset
-   - Significantly increased sample size, particularly at low redshift
-
-3. **Cosmos Revisited: Revisiting Issues in the Pantheon+ Dataset**
+2. **Cosmos Revisited: Revisiting Issues in the Pantheon+ Dataset**
 
    - Authors: Lane, Z. G., Seifert, A., Ridden-Harper, R., & Wiltshire, D. L. (2024)
    - Highlights potential biases and systematic uncertainties in the Pantheon+ dataset:
@@ -173,3 +168,4 @@ python main.py
 2. Brout, D., et al. (2022b), "The Pantheon+ Analysis: Cosmological Constraints"
 3. Riess, A. G., et al. (2022), "A Comprehensive Measurement of the Local Value of the Hubble Constant with 1 km/s/Mpc Uncertainty from the Hubble Space Telescope and the SH0ES Team"
 4. Lane, Z. G., et al. (2024), "Cosmos Revisited: Revisiting Issues in the Pantheon+ Dataset"
+
