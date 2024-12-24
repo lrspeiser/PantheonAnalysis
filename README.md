@@ -87,6 +87,31 @@ Our analysis processes the following key measurements:
    - Introduced checks for cosmic variance.
    - Results saved in `cosmic_variance_analysis.csv`.
 
+4. **Redshift Discrepancies**:
+   - If a Gödel-style rotational effect exists, it would add a subtle, pervasive shift to redshifts, layered on top of the gravitational redshifts and peculiar velocities caused by local inhomogeneities.
+   - This could explain why some redshift discrepancies in the Pantheon+ dataset persist after accounting for peculiar velocities and gravitational redshift.
+
+---
+
+### Commentary on the 2024 Paper
+
+The 2024 paper is particularly interesting because it challenges the long-standing assumption that redshifts are primarily caused by the metric expansion of space. Instead, it argues that:
+
+1. **Gravitational Interactions Dominate**:
+   - The gravitational pull of massive galaxies and clusters, and the travel of light through voids and other large-scale structures, may explain much of the observed redshift discrepancies.
+
+2. **Cosmic Variance and Local Dynamics**:
+   - Variations in local gravitational environments introduce redshift differences that are not uniform and cannot be fully explained by expansion alone.
+
+3. **Implications for Cosmology**:
+   - If these gravitational effects are significant, the standard cosmological model may require revisions to account for local and large-scale gravitational influences, shifting the focus away from universal expansion as the sole cause of redshift.
+
+Our code plays a crucial role in verifying these claims by:
+
+- **Analyzing Redshift Frames**: We calculate and compare heliocentric, CMB, and Hubble diagram redshifts to highlight discrepancies.
+- **Examining Cosmic Variance**: Our analysis identifies clusters of supernovae with consistent deviations, supporting the paper's arguments about local gravitational effects.
+- **Testing Alternative Models**: By incorporating Gödel-style rotational effects and calculating angular velocities, we explore whether frame-dragging could provide additional insights into the observed discrepancies.
+
 ---
 
 ## Output Files
@@ -100,6 +125,7 @@ Our analysis processes the following key measurements:
 7. `peculiar_velocity_validation.csv`: Validation results for peculiar velocities
 8. `redshift_consistency_validation.csv`: Validation results for redshift offsets
 9. `cosmic_variance_analysis.csv`: Validation results for cosmic variance
+10. `rotational_angular_velocity_analysis.csv`: Results of Gödel-style angular velocity calculations
 
 ---
 
@@ -139,7 +165,8 @@ The analysis code performs the following steps:
 3. **Statistical analysis**: Computes summary statistics, such as mean and median values of key parameters.
 4. **Visualizations**: Generates detailed plots to analyze relationships in the data.
 5. **Validations**: Implements checks for peculiar velocity bias, redshift consistency, and cosmic variance.
-6. **Saving results**: Outputs processed data and analysis results into structured CSV files.
+6. **Testing Alternative Models**: Evaluates Gödel-style rotational frame-dragging effects and calculates angular velocities to explore additional explanations for redshift discrepancies.
+7. **Saving results**: Outputs processed data and analysis results into structured CSV files.
 
 ---
 

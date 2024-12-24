@@ -291,6 +291,50 @@ def analyze_redshift_offsets(data):
 
     return data
 
+def analyze_rotational_angular_velocity(data):
+    """
+    Estimate the angular velocity (\omega) required to account for redshift differences
+    assuming rotation around a universal center.
+
+    Parameters:
+    - data (DataFrame): Processed supernova data with observed and predicted redshifts.
+
+    Returns:
+    - DataFrame: Data with calculated angular velocities.
+    """
+    print("\nCalculating angular velocities for rotational frame dragging...")
+
+    # Constants
+    c = 299792.458  # Speed of light in km/s
+    mpc_to_m = 3.085677581e22  # Conversion from Mpc to meters
+
+    # Calculate the radial distance in meters
+    data['radial_distance_m'] = data['expected_distance'] * mpc_to_m
+
+    # Calculate the redshift difference (observed - predicted)
+    data['redshift_diff'] = data['zcmb'] - (data['measured_distance'] * 70 / c)
+
+    # Compute the angular velocity (omega) in rad/s
+    data['angular_velocity'] = (data['redshift_diff'] * c) / data['radial_distance_m']
+
+    # Filter out invalid or unrealistic angular velocities
+    data['angular_velocity'] = data['angular_velocity'].replace([np.inf, -np.inf], np.nan)
+    data['angular_velocity'] = data['angular_velocity'].fillna(0)
+
+    # Debugging output
+    print("\nDebugging Angular Velocity Calculations:")
+    print(data[['SNID', 'zcmb', 'redshift_diff', 'radial_distance_m', 'angular_velocity']].head(6))
+
+    # Save results
+    angular_velocity_file = "rotational_angular_velocity_analysis.csv"
+    data[['SNID', 'zcmb', 'redshift_diff', 'radial_distance_m', 'angular_velocity']].to_csv(
+        angular_velocity_file, index=False
+    )
+    print(f"Saved rotational angular velocity analysis to {angular_velocity_file}")
+
+    return data
+
+
 def main():
     print("Starting Pantheon+ analysis...")
 
@@ -309,6 +353,10 @@ def main():
     analyze_cosmic_variance(processed_data)
     analyze_peculiar_velocity_correlation(processed_data)
     analyze_redshift_offsets(processed_data)
+
+    # Rotational angular velocity analysis
+    rotational_data = analyze_rotational_angular_velocity(processed_data)
+
 
     print("\nAnalysis complete!")
 
