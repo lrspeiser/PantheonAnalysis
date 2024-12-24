@@ -3,104 +3,150 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Original functions remain unchanged
 def load_and_clean_data(filepath='all_redshifts_PVs.csv'):
     """Load and perform initial data cleaning."""
+    print("Loading data from CSV...")
     data = pd.read_csv(filepath)
+    print(f"Loaded {len(data)} rows")
 
-    # Calculate some useful derived quantities
+    print("Calculating derived quantities...")
+    # Calculate derived quantities
     data['redshift_diff'] = data['zcmb'] - data['zhel']
     data['abs_PV'] = np.abs(data['PV'])
 
     return data
 
-def create_comprehensive_plots(data):
-    """Create a comprehensive set of plots analyzing key aspects of the dataset."""
-    fig = plt.figure(figsize=(15, 12))
-    gs = plt.GridSpec(3, 2, figure=fig)
+def process_data(data):
+    """Process the data and create additional columns for analysis."""
+    print("Processing data...")
 
-    # 1. Redshift distribution
-    ax1 = fig.add_subplot(gs[0, 0])
-    sns.histplot(data=data, x='zcmb', bins=50, ax=ax1)
-    ax1.set_title('CMB Frame Redshift Distribution')
-    ax1.set_xlabel('zcmb')
+    # Create processed dataframe with selected and computed columns
+    processed_data = pd.DataFrame()
 
-    # 2. Peculiar velocity distribution
-    ax2 = fig.add_subplot(gs[0, 1])
-    sns.histplot(data=data, x='PV', bins=50, ax=ax2)
-    ax2.set_title('Peculiar Velocity Distribution')
-    ax2.set_xlabel('PV (km/s)')
+    # Copy over original columns
+    original_columns = ['SNID', 'zhel', 'zcmb', 'zHD', 'PV', 'has_host', 'in_group']
+    for col in original_columns:
+        processed_data[col] = data[col]
 
-    # 3. Sky distribution
-    ax3 = fig.add_subplot(gs[1, :])
-    scatter = ax3.scatter(data['RA'], data['Dec'], c=data['zcmb'], 
-                         cmap='viridis', alpha=0.6, s=5)
-    plt.colorbar(scatter, ax=ax3, label='Redshift')
-    ax3.set_title('Sky Distribution of SNe')
-    ax3.set_xlabel('RA (deg)')
-    ax3.set_ylabel('Dec (deg)')
+    # Add computed columns
+    print("Computing derived quantities...")
+    processed_data['redshift_diff'] = data['zcmb'] - data['zhel']
+    processed_data['abs_PV'] = np.abs(data['PV'])
+    processed_data['z_relative_error'] = data['zhelerr'] / data['zhel']
+    processed_data['host_status'] = data['has_host'].map({1: 'With Host', 0: 'No Host'})
+    processed_data['group_status'] = data['in_group'].map({1: 'In Group', 0: 'Not in Group'})
 
-    # 4. Host galaxy statistics
-    ax4 = fig.add_subplot(gs[2, 0])
-    host_counts = data['has_host'].value_counts()
-    ax4.bar(['Without Host', 'With Host'], 
-            [host_counts[0], host_counts[1]])
-    ax4.set_title('Host Galaxy Statistics')
+    return processed_data
 
-    # 5. Group membership statistics
-    ax5 = fig.add_subplot(gs[2, 1])
-    group_counts = data['in_group'].value_counts()
-    ax5.bar(['Not in Group', 'In Group'], 
-            [group_counts[0], group_counts[1]])
-    ax5.set_title('Group Membership Statistics')
-
-    plt.tight_layout()
-    return fig
-
-def compute_detailed_statistics(data):
-    """Compute detailed statistics about the sample."""
+def compute_statistics(data):
+    """Compute statistics for the sample."""
+    print("Computing statistics...")
     stats = {
-        'Total SNe': len(data),
-        'Mean Redshift (CMB)': data['zcmb'].mean(),
-        'Median Redshift (CMB)': data['zcmb'].median(),
-        'Redshift Range': f"{data['zcmb'].min():.3f} to {data['zcmb'].max():.3f}",
-        'Mean PV (km/s)': data['PV'].mean(),
-        'Median PV (km/s)': data['PV'].median(),
-        'SNe with Hosts (%)': (data['has_host'].mean() * 100),
-        'SNe in Groups (%)': (data['in_group'].mean() * 100),
-        'Mean zHD Error': data['zHDerr'].mean(),
+        'total_SNe': len(data),
+        'mean_zcmb': data['zcmb'].mean(),
+        'median_zcmb': data['zcmb'].median(),
+        'min_zcmb': data['zcmb'].min(),
+        'max_zcmb': data['zcmb'].max(),
+        'mean_PV': data['PV'].mean(),
+        'median_PV': data['PV'].median(),
+        'host_fraction': data['has_host'].mean(),
+        'group_fraction': data['in_group'].mean(),
+        'mean_zHD_error': data['zHDerr'].mean()
     }
 
-    # Add redshift statistics for different frames
-    for z_type in ['zhel', 'zcmb', 'zHD']:
-        subset = data[data[z_type] > 0]  # Only positive redshifts
-        stats[f'{z_type} stats'] = {
-            'mean': subset[z_type].mean(),
-            'std': subset[z_type].std(),
-            'median': subset[z_type].median()
-        }
+    # Create a DataFrame with the statistics
+    stats_df = pd.DataFrame([stats])
+    return stats_df
 
-    return stats
+def save_results(processed_data, stats_df):
+    """Save processed data and statistics to CSV files."""
+    print("Saving results to CSV files...")
+
+    # Save processed data
+    processed_data.to_csv('pantheon_plus_processed.csv', index=False)
+    print("Saved processed data to pantheon_plus_processed.csv")
+
+    # Save statistics
+    stats_df.to_csv('pantheon_plus_statistics.csv', index=False)
+    print("Saved statistics to pantheon_plus_statistics.csv")
+
+# New analysis functions
+def analyze_redshift_frames(data):
+    """Analyze differences between redshift frames."""
+    print("\nAnalyzing redshift frames...")
+
+    differences = {
+        'zhel_vs_zcmb': data['zhel'] - data['zcmb'],
+        'zhel_vs_zHD': data['zhel'] - data['zHD'],
+        'zcmb_vs_zHD': data['zcmb'] - data['zHD']
+    }
+
+    # Save redshift differences analysis
+    redshift_diff_df = pd.DataFrame(differences)
+    redshift_diff_df.to_csv('redshift_differences.csv', index=False)
+    print("Saved redshift differences to redshift_differences.csv")
+
+    return differences
+
+def create_analysis_plots(data):
+    """Create detailed analysis plots."""
+    print("\nCreating analysis plots...")
+
+    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+    # Plot 1: Redshift correlations
+    ax = axes[0, 0]
+    ax.scatter(data['zhel'], data['zcmb'], alpha=0.5, s=5)
+    ax.set_xlabel('Heliocentric Redshift')
+    ax.set_ylabel('CMB Frame Redshift')
+    ax.set_title('Heliocentric vs CMB Frame Redshift')
+
+    # Plot 2: PV distribution by group status
+    ax = axes[0, 1]
+    sns.boxplot(data=data, x='group_status', y='PV', ax=ax)
+    ax.set_title('Peculiar Velocities by Group Membership')
+
+    # Plot 3: Redshift differences
+    ax = axes[1, 0]
+    ax.hist(data['redshift_diff'], bins=50)
+    ax.set_xlabel('Redshift Difference (zcmb - zhel)')
+    ax.set_title('Distribution of Redshift Differences')
+
+    # Plot 4: PV vs Redshift
+    ax = axes[1, 1]
+    ax.scatter(data['zcmb'], data['PV'], alpha=0.5, s=5)
+    ax.set_xlabel('CMB Frame Redshift')
+    ax.set_ylabel('Peculiar Velocity')
+    ax.set_title('PV vs Redshift')
+
+    plt.tight_layout()
+    plt.savefig('pantheon_analysis_plots.png')
+    print("Saved plots to pantheon_analysis_plots.png")
+
+    return fig
 
 def main():
-    # Load and process data
+    print("Starting Pantheon+ analysis...")
+
+    # Original analysis
     data = load_and_clean_data()
+    processed_data = process_data(data)
+    stats_df = compute_statistics(data)
+    save_results(processed_data, stats_df)
 
-    # Compute statistics
-    stats = compute_detailed_statistics(data)
+    # New additional analysis
+    redshift_differences = analyze_redshift_frames(processed_data)
+    fig = create_analysis_plots(processed_data)
 
-    # Print statistics
-    print("\nPantheon+ Sample Statistics:")
-    for key, value in stats.items():
-        if isinstance(value, dict):
-            print(f"\n{key}:")
-            for subkey, subvalue in value.items():
-                print(f"  {subkey}: {subvalue:.4f}")
-        else:
-            print(f"{key}: {value}")
+    # Print summary statistics
+    print("\nSummary Statistics:")
+    print(f"Total SNe: {len(data)}")
+    print(f"Redshift Range: {data['zcmb'].min():.3f} to {data['zcmb'].max():.3f}")
+    print(f"SNe with Hosts: {(data['has_host'].mean() * 100):.1f}%")
+    print(f"SNe in Groups: {(data['in_group'].mean() * 100):.1f}%")
 
-    # Create and show plots
-    fig = create_comprehensive_plots(data)
-    plt.show()
+    print("\nAnalysis complete!")
 
 if __name__ == "__main__":
     main()
